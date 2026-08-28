@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const dotenv = require("dotenv");
 
-const documentRoutes = require("./routes/documentRoutes");
+dotenv.config();
 
 const app = express();
 
@@ -10,18 +10,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use("/api/documents", documentRoutes);
+// Import routes
+const verifyRoutes = require("./routes/verify");
 
-// Health check
+// Routes
+app.use("/api", verifyRoutes);
+
+// Test route
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "AI Document Verification API is running"
+    message: "AI Document Verification Backend is running"
   });
 });
 
-// Server
+// Start server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
