@@ -12,16 +12,22 @@ import fitz  # PyMuPDF
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
-from pyzbar.pyzbar import decode as pyzbar_decode
 
 
 # ============================================================
 # TESSERACT CONFIGURATION
 # ============================================================
 
-pytesseract.pytesseract.tesseract_cmd = (
-    r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-)
+# Tesseract path can be supplied with the TESSERACT_CMD environment variable.
+# On Windows, use the local installation path; on Linux/Render, leave it unset
+# so pytesseract can use the system `tesseract` command if available.
+tesseract_cmd = os.getenv("TESSERACT_CMD")
+if tesseract_cmd:
+    pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+elif os.name == "nt":
+    windows_tesseract = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    if os.path.exists(windows_tesseract):
+        pytesseract.pytesseract.tesseract_cmd = windows_tesseract
 
 
 # ============================================================
@@ -447,82 +453,6 @@ def detect_qr_opencv(image):
 
             print(
                 "OpenCV QR error:",
-                repr(e)
-            )
-
-    return results
-
-
-# ============================================================
-# QR / BARCODE - PYZBAR
-# ============================================================
-
-def detect_barcodes_pyzbar(image):
-
-    results = []
-
-    if image is None:
-        return results
-
-    images = [image]
-
-    try:
-
-        gray = cv2.cvtColor(
-            image,
-            cv2.COLOR_BGR2GRAY
-        )
-
-        images.append(gray)
-
-        height, width = image.shape[:2]
-
-        enlarged = cv2.resize(
-            image,
-            (
-                width * 3,
-                height * 3
-            ),
-            interpolation=cv2.INTER_CUBIC
-        )
-
-        images.append(enlarged)
-
-    except Exception as e:
-
-        print(
-            "Barcode preprocessing error:",
-            repr(e)
-        )
-
-    for img in images:
-
-        try:
-
-            decoded = pyzbar_decode(img)
-
-            for item in decoded:
-
-                try:
-
-                    data = item.data.decode(
-                        "utf-8",
-                        errors="ignore"
-                    ).strip()
-
-                except Exception:
-
-                    data = str(item.data)
-
-                if data and data not in results:
-
-                    results.append(data)
-
-        except Exception as e:
-
-            # pyzbar can fail if ZBar is not installed.
-            print(
-                "PyZBar error:",
                 repr(e)
             )
 
